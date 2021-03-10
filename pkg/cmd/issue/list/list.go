@@ -32,6 +32,7 @@ type ListOptions struct {
 	Author       string
 	Mention      string
 	Milestone    string
+	Search       string
 }
 
 func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Command {
@@ -75,7 +76,7 @@ func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Comman
 	cmd.Flags().StringVarP(&opts.Author, "author", "A", "", "Filter by author")
 	cmd.Flags().StringVar(&opts.Mention, "mention", "", "Filter by mention")
 	cmd.Flags().StringVarP(&opts.Milestone, "milestone", "m", "", "Filter by milestone `number` or `title`")
-
+	cmd.Flags().StringVarP(&opts.Search, "search", "S", "", "Search issues with filter")
 	return cmd
 }
 
@@ -105,6 +106,27 @@ func listRun(opts *ListOptions) error {
 	filterMention, err := meReplacer.Replace(opts.Mention)
 	if err != nil {
 		return err
+	}
+
+	if opts.Search != "" {
+		ic, err := api.IssueSearch(apiClient, baseRepo, opts.Search)
+		if err != nil {
+			return err
+		}
+		err = opts.IO.StartPager()
+		if err != nil {
+			return err
+		}
+		defer opts.IO.StopPager()
+
+		if isTerminal {
+			hasFilters := opts.State != "open" || len(opts.Labels) > 0 || opts.Assignee != "" || opts.Author != "" || opts.Mention != "" || opts.Milestone != ""
+			title := prShared.ListHeader(ghrepo.FullName(baseRepo), "issue", len(ic.Issues), ic.TotalCount, hasFilters)
+			fmt.Fprintf(opts.IO.Out, "\n%s\n\n", title)
+		}
+
+		issueShared.PrintIssues(opts.IO, "", len(ic.Issues), ic.Issues)
+		return nil
 	}
 
 	if opts.WebMode {
