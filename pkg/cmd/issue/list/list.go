@@ -51,6 +51,7 @@ func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Comman
 			$ gh issue list -a @me
 			$ gh issue list --web
 			$ gh issue list --milestone 'MVP'
+			$ gh issue list --search "assignee:monalisa label:enhancement author:mislav"
 		`),
 		Args: cmdutil.NoArgsQuoteReminder,
 		RunE: func(cmd *cobra.Command, args []string) error {
