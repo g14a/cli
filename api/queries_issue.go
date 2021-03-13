@@ -453,12 +453,15 @@ func IssueByNumber(client *Client, repo ghrepo.Interface, number int) (*Issue, e
 	return &resp.Repository.Issue, nil
 }
 
-func IssueSearch(client *Client, repo ghrepo.Interface, searchQuery string) (*IssuesAndTotalCount, error) {
+func IssueSearch(client *Client, repo ghrepo.Interface, searchQuery string, limit int) (*IssuesAndTotalCount, error) {
 	type response struct {
 		Search struct {
 			IssueCount int
 			Edges      []struct {
 				Node struct {
+					Repository struct {
+						HasIssuesEnabled bool
+					}
 					Number    int
 					Title     string
 					State     string
@@ -466,19 +469,23 @@ func IssueSearch(client *Client, repo ghrepo.Interface, searchQuery string) (*Is
 					Labels    Labels
 				}
 			}
+			PageInfo struct {
+				HasNextPage bool
+				EndCursor   string
+			}
 		}
 	}
 
 	query :=
-		`query IssueSearch($type: SearchType!, $first: Int, $searchQuery: String!) {
-			search(type: $type, first: $first, query: $searchQuery) {
+		`query IssueSearch($type: SearchType!, $first: Int, $after: String, $searchQuery: String!) {
+			search(type: $type, first: $first, after: $after, query: $searchQuery) {
 				issueCount
 				edges {
 					node {
 					... on Issue {
 						repository {
-							hasIssuesEnabled
-						}
+            				hasIssuesEnabled
+          				}
 						number
 					  	title
 					  	updatedAt
@@ -491,39 +498,65 @@ func IssueSearch(client *Client, repo ghrepo.Interface, searchQuery string) (*Is
 					}
 				}
 			}
+			pageInfo {
+				hasNextPage
+				endCursor
+			}
 		}
 	}`
 
 	searchQuery = searchQuery + " is:issue" +
 		" repo:" + repo.RepoOwner() + "/" + repo.RepoName()
 
+	pageLimit := min(limit, 100)
+
 	variables := map[string]interface{}{
 		"type":        "ISSUE",
-		"first":       30,
+		"first":       pageLimit,
 		"searchQuery": searchQuery,
 	}
 
-	var resp response
-	err := client.GraphQL(repo.RepoHost(), query, variables, &resp)
-	if err != nil {
-		return nil, err
-	}
-
 	ic := IssuesAndTotalCount{}
+	var resp response
 
-	for _, i := range resp.Search.Edges {
-		ic.Issues = append(ic.Issues, Issue{
-			Number:    i.Node.Number,
-			Title:     i.Node.Title,
-			State:     i.Node.State,
-			UpdatedAt: i.Node.UpdatedAt,
-			Labels:    i.Node.Labels,
-		})
+loop:
+	for {
+		err := client.GraphQL(repo.RepoHost(), query, variables, &resp)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, i := range resp.Search.Edges {
+			ic.Issues = append(ic.Issues, Issue{
+				Number:    i.Node.Number,
+				Title:     i.Node.Title,
+				State:     i.Node.State,
+				UpdatedAt: i.Node.UpdatedAt,
+				Labels:    i.Node.Labels,
+			})
+			if len(ic.Issues) == limit {
+				break loop
+			}
+		}
+
+		if resp.Search.PageInfo.HasNextPage {
+			variables["after"] = resp.Search.PageInfo.EndCursor
+			variables["first"] = min(pageLimit, limit-len(resp.Search.Edges))
+		} else {
+			break
+		}
 	}
 
 	ic.TotalCount = resp.Search.IssueCount
 
 	return &ic, nil
+}
+
+func QuoteValueForQuery(v string) string {
+	if strings.ContainsAny(v, " \"\t\r\n") {
+		return fmt.Sprintf("%q", v)
+	}
+	return v
 }
 
 func IssueClose(client *Client, repo ghrepo.Interface, issue Issue) error {

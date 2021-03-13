@@ -84,7 +84,7 @@ func listRun(opts *ListOptions) error {
 
 	if opts.WebMode {
 		prListURL := ghrepo.GenerateRepoURL(baseRepo, "pulls")
-		openURL, err := shared.ListURLWithQuery(prListURL, shared.FilterOptions{
+		openURL, err := shared.ListURLWithQuery(prListURL, "", shared.FilterOptions{
 			Entity:     "pr",
 			State:      opts.State,
 			Assignee:   opts.Assignee,

@@ -109,50 +109,28 @@ func listRun(opts *ListOptions) error {
 		return err
 	}
 
+	searchQuery, webFilterOptions := prShared.IssueSearchBuild(filterAssignee, opts.State, filterAuthor, filterMention, opts.Milestone, opts.Labels, opts.WebMode)
+
 	if opts.Search != "" {
-		ic, err := api.IssueSearch(apiClient, baseRepo, opts.Search)
-		if err != nil {
-			return err
-		}
-		err = opts.IO.StartPager()
-		if err != nil {
-			return err
-		}
-		defer opts.IO.StopPager()
+		searchQuery += fmt.Sprintf("%s", opts.Search)
+	}
 
-		if isTerminal {
-			hasFilters := opts.State != "open" || len(opts.Labels) > 0 || opts.Assignee != "" || opts.Author != "" || opts.Mention != "" || opts.Milestone != ""
-			title := prShared.ListHeader(ghrepo.FullName(baseRepo), "issue", len(ic.Issues), ic.TotalCount, hasFilters)
-			fmt.Fprintf(opts.IO.Out, "\n%s\n\n", title)
-		}
-
-		issueShared.PrintIssues(opts.IO, "", len(ic.Issues), ic.Issues)
-		return nil
+	listResult, err := api.IssueSearch(apiClient, baseRepo, searchQuery, opts.LimitResults)
+	if err != nil {
+		return err
 	}
 
 	if opts.WebMode {
 		issueListURL := ghrepo.GenerateRepoURL(baseRepo, "issues")
-		openURL, err := prShared.ListURLWithQuery(issueListURL, prShared.FilterOptions{
-			Entity:    "issue",
-			State:     opts.State,
-			Assignee:  filterAssignee,
-			Labels:    opts.Labels,
-			Author:    filterAuthor,
-			Mention:   filterMention,
-			Milestone: opts.Milestone,
-		})
+		openURL, err := prShared.ListURLWithQuery(issueListURL, searchQuery, webFilterOptions)
 		if err != nil {
 			return err
 		}
+
 		if isTerminal {
 			fmt.Fprintf(opts.IO.ErrOut, "Opening %s in your browser.\n", utils.DisplayURL(openURL))
 		}
 		return utils.OpenInBrowser(openURL)
-	}
-
-	listResult, err := api.IssueList(apiClient, baseRepo, opts.State, opts.Labels, filterAssignee, opts.LimitResults, filterAuthor, filterMention, opts.Milestone)
-	if err != nil {
-		return err
 	}
 
 	err = opts.IO.StartPager()

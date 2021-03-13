@@ -58,12 +58,13 @@ func runCommand(rt http.RoundTripper, isTTY bool, cli string) (*test.CmdOut, err
 		ErrBuf: stderr,
 	}, err
 }
+
 func TestIssueList_nontty(t *testing.T) {
 	http := &httpmock.Registry{}
 	defer http.Verify(t)
 
 	http.Register(
-		httpmock.GraphQL(`query IssueList\b`),
+		httpmock.GraphQL(`query IssueSearch\b`),
 		httpmock.FileResponse("./fixtures/issueList.json"))
 
 	output, err := runCommand(http, false, "")
@@ -84,7 +85,7 @@ func TestIssueList_tty(t *testing.T) {
 	defer http.Verify(t)
 
 	http.Register(
-		httpmock.GraphQL(`query IssueList\b`),
+		httpmock.GraphQL(`query IssueSearch\b`),
 		httpmock.FileResponse("./fixtures/issueList.json"))
 
 	output, err := runCommand(http, true, "")

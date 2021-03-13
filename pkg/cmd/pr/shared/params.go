@@ -151,7 +151,7 @@ type FilterOptions struct {
 	Milestone  string
 }
 
-func ListURLWithQuery(listURL string, options FilterOptions) (string, error) {
+func ListURLWithQuery(listURL string, searchQuery string, options FilterOptions) (string, error) {
 	u, err := url.Parse(listURL)
 	if err != nil {
 		return "", err
@@ -164,7 +164,7 @@ func ListURLWithQuery(listURL string, options FilterOptions) (string, error) {
 		query += fmt.Sprintf("assignee:%s ", options.Assignee)
 	}
 	for _, label := range options.Labels {
-		query += fmt.Sprintf("label:%s ", quoteValueForQuery(label))
+		query += fmt.Sprintf("label:%s ", api.QuoteValueForQuery(label))
 	}
 	if options.Author != "" {
 		query += fmt.Sprintf("author:%s ", options.Author)
@@ -176,19 +176,57 @@ func ListURLWithQuery(listURL string, options FilterOptions) (string, error) {
 		query += fmt.Sprintf("mentions:%s ", options.Mention)
 	}
 	if options.Milestone != "" {
-		query += fmt.Sprintf("milestone:%s ", quoteValueForQuery(options.Milestone))
+		query += fmt.Sprintf("milestone:%s ", api.QuoteValueForQuery(options.Milestone))
 	}
+
+	if searchQuery != "" {
+		query += fmt.Sprintf("%s", searchQuery)
+	}
+
 	q := u.Query()
 	q.Set("q", strings.TrimSuffix(query, " "))
 	u.RawQuery = q.Encode()
 	return u.String(), nil
 }
 
-func quoteValueForQuery(v string) string {
-	if strings.ContainsAny(v, " \"\t\r\n") {
-		return fmt.Sprintf("%q", v)
+func IssueSearchBuild(assignee, state, author, mention, milestone string, labels []string, webMode bool) (string, FilterOptions) {
+	var searchQuery string
+
+	if assignee != "" {
+		searchQuery += fmt.Sprintf("assignee:%s ", assignee)
 	}
-	return v
+	if state != "" {
+		searchQuery += fmt.Sprintf("state:%s ", state)
+	}
+	if author != "" {
+		searchQuery += fmt.Sprintf("author:%s ", author)
+	}
+	if mention != "" {
+		searchQuery += fmt.Sprintf("mentions:%s ", mention)
+	}
+	if milestone != "" {
+		searchQuery += fmt.Sprintf("milestone:%s ", api.QuoteValueForQuery(milestone))
+	}
+
+	for _, label := range labels {
+		searchQuery += fmt.Sprintf("label:%s ", api.QuoteValueForQuery(label))
+	}
+
+	if webMode {
+		webFilterOptions := FilterOptions{
+			Entity:    "issue",
+			State:     state,
+			Assignee:  assignee,
+			Labels:    labels,
+			Author:    author,
+			Mention:   mention,
+			Milestone: milestone,
+		}
+
+		return "", webFilterOptions
+	}
+
+	return searchQuery, FilterOptions{}
 }
 
 // MeReplacer resolves usages of `@me` to the handle of the currently logged in user.
