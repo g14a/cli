@@ -120,6 +120,8 @@ func listRun(opts *ListOptions) error {
 		return err
 	}
 
+	fmt.Println(searchQuery,"===========search query==========")
+
 	if opts.WebMode {
 		issueListURL := ghrepo.GenerateRepoURL(baseRepo, "issues")
 		openURL, err := prShared.ListURLWithQuery(issueListURL, searchQuery, webFilterOptions)

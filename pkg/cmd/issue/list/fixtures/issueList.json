@@ -1,5 +1,8 @@
 {
   "data": {
+    "repository": {
+      "hasIssuesEnabled": true
+    },
     "search": {
       "issueCount": 3,
       "edges": [

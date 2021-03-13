@@ -455,13 +455,14 @@ func IssueByNumber(client *Client, repo ghrepo.Interface, number int) (*Issue, e
 
 func IssueSearch(client *Client, repo ghrepo.Interface, searchQuery string, limit int) (*IssuesAndTotalCount, error) {
 	type response struct {
+		Repository struct {
+			HasIssuesEnabled bool
+		}
+
 		Search struct {
 			IssueCount int
 			Edges      []struct {
 				Node struct {
-					Repository struct {
-						HasIssuesEnabled bool
-					}
 					Number    int
 					Title     string
 					State     string
@@ -477,7 +478,10 @@ func IssueSearch(client *Client, repo ghrepo.Interface, searchQuery string, limi
 	}
 
 	query :=
-		`query IssueSearch($type: SearchType!, $first: Int, $after: String, $searchQuery: String!) {
+		`query IssueSearch($repoName: String!, $owner: String!, $type: SearchType!, $first: Int, $after: String, $searchQuery: String!) {
+			repository(name: $repoName, owner: $owner) {
+				hasIssuesEnabled
+			}
 			search(type: $type, first: $first, after: $after, query: $searchQuery) {
 				issueCount
 				edges {
@@ -505,14 +509,16 @@ func IssueSearch(client *Client, repo ghrepo.Interface, searchQuery string, limi
 		}
 	}`
 
-	searchQuery = searchQuery + " is:issue" +
+	searchQuery = searchQuery + "is:issue" +
 		" repo:" + repo.RepoOwner() + "/" + repo.RepoName()
 
 	pageLimit := min(limit, 100)
 
 	variables := map[string]interface{}{
+		"repoName":    repo.RepoName(),
+		"owner":       repo.RepoOwner(),
 		"type":        "ISSUE",
-		"first":       pageLimit,
+		"first":       limit,
 		"searchQuery": searchQuery,
 	}
 
@@ -524,6 +530,10 @@ loop:
 		err := client.GraphQL(repo.RepoHost(), query, variables, &resp)
 		if err != nil {
 			return nil, err
+		}
+
+		if !resp.Repository.HasIssuesEnabled {
+			return nil, fmt.Errorf("the '%s' repository has disabled issues", ghrepo.FullName(repo))
 		}
 
 		for _, i := range resp.Search.Edges {

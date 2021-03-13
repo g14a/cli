@@ -3,6 +3,7 @@ package list
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -113,18 +114,13 @@ func TestIssueList_tty_withFlags(t *testing.T) {
 	defer http.Verify(t)
 
 	http.Register(
-		httpmock.GraphQL(`query IssueList\b`),
+		httpmock.GraphQL(`query IssueSearch\b`),
 		httpmock.GraphQLQuery(`
 		{ "data": {	"repository": {
 			"hasIssuesEnabled": true,
-			"issues": { "nodes": [] }
+			"search": { "issueCount": 0, "edges": [] }
 		} } }`, func(_ string, params map[string]interface{}) {
-			assert.Equal(t, "probablyCher", params["assignee"].(string))
-			assert.Equal(t, "foo", params["author"].(string))
-			assert.Equal(t, "me", params["mention"].(string))
-			assert.Equal(t, "12345", params["milestone"].(string))
-			assert.Equal(t, []interface{}{"web", "bug"}, params["labels"].([]interface{}))
-			assert.Equal(t, []interface{}{"OPEN"}, params["states"].([]interface{}))
+			assert.Equal(t, "assignee:probablyCher state:open author:foo mentions:me milestone:1.x label:web label:bug is:issue repo:OWNER/REPO", params["searchQuery"].(string))
 		}))
 
 	http.Register(
@@ -156,15 +152,13 @@ func TestIssueList_atMe(t *testing.T) {
 		httpmock.GraphQL(`query UserCurrent\b`),
 		httpmock.StringResponse(`{"data": {"viewer": {"login": "monalisa"} } }`))
 	http.Register(
-		httpmock.GraphQL(`query IssueList\b`),
+		httpmock.GraphQL(`query IssueSearch\b`),
 		httpmock.GraphQLQuery(`
 		{ "data": {	"repository": {
 			"hasIssuesEnabled": true,
-			"issues": { "nodes": [] }
+			"search": { "issueCount": 0, "edges": [] }
 		} } }`, func(_ string, params map[string]interface{}) {
-			assert.Equal(t, "monalisa", params["assignee"].(string))
-			assert.Equal(t, "monalisa", params["author"].(string))
-			assert.Equal(t, "monalisa", params["mention"].(string))
+			assert.Equal(t, "assignee:monalisa state:open author:monalisa mentions:monalisa is:issue repo:OWNER/REPO", params["searchQuery"].(string))
 		}))
 
 	_, err := runCommand(http, true, "-a @me -A @me --mention @me")
@@ -189,7 +183,7 @@ func TestIssueList_nullAssigneeLabels(t *testing.T) {
 	defer http.Verify(t)
 
 	http.Register(
-		httpmock.GraphQL(`query IssueList\b`),
+		httpmock.GraphQL(`query IssueSearch\b`),
 		httpmock.StringResponse(`
 			{ "data": {	"repository": {
 				"hasIssuesEnabled": true,
@@ -219,10 +213,11 @@ func TestIssueList_disabledIssues(t *testing.T) {
 	defer http.Verify(t)
 
 	http.Register(
-		httpmock.GraphQL(`query IssueList\b`),
+		httpmock.GraphQL(`query IssueSearch\b`),
 		httpmock.StringResponse(`
 			{ "data": {	"repository": {
-				"hasIssuesEnabled": false
+				"hasIssuesEnabled": false,
+				"search": { "issueCount": 0, "edges": [] }
 			} } }`),
 	)
 
@@ -249,6 +244,7 @@ func TestIssueList_web(t *testing.T) {
 		t.Errorf("error running command `issue list` with `--web` flag: %v", err)
 	}
 
+	fmt.Println(output.Stderr(),"============output err=========")
 	assert.Equal(t, "", output.String())
 	assert.Equal(t, "Opening github.com/OWNER/REPO/issues in your browser.\n", output.Stderr())
 }
