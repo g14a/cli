@@ -115,13 +115,6 @@ func listRun(opts *ListOptions) error {
 		searchQuery += fmt.Sprintf("%s", opts.Search)
 	}
 
-	listResult, err := api.IssueSearch(apiClient, baseRepo, searchQuery, opts.LimitResults)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(searchQuery,"===========search query==========")
-
 	if opts.WebMode {
 		issueListURL := ghrepo.GenerateRepoURL(baseRepo, "issues")
 		openURL, err := prShared.ListURLWithQuery(issueListURL, searchQuery, webFilterOptions)
@@ -133,6 +126,11 @@ func listRun(opts *ListOptions) error {
 			fmt.Fprintf(opts.IO.ErrOut, "Opening %s in your browser.\n", utils.DisplayURL(openURL))
 		}
 		return utils.OpenInBrowser(openURL)
+	}
+
+	listResult, err := api.IssueSearch(apiClient, baseRepo, searchQuery, opts.LimitResults)
+	if err != nil {
+		return err
 	}
 
 	err = opts.IO.StartPager()

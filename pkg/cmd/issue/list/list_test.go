@@ -3,7 +3,6 @@ package list
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -244,7 +243,6 @@ func TestIssueList_web(t *testing.T) {
 		t.Errorf("error running command `issue list` with `--web` flag: %v", err)
 	}
 
-	fmt.Println(output.Stderr(),"============output err=========")
 	assert.Equal(t, "", output.String())
 	assert.Equal(t, "Opening github.com/OWNER/REPO/issues in your browser.\n", output.Stderr())
 }
