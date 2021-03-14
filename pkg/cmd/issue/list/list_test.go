@@ -3,6 +3,7 @@ package list
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -119,7 +120,7 @@ func TestIssueList_tty_withFlags(t *testing.T) {
 			"hasIssuesEnabled": true,
 			"search": { "issueCount": 0, "edges": [] }
 		} } }`, func(_ string, params map[string]interface{}) {
-			assert.Equal(t, "assignee:probablyCher state:open author:foo mentions:me milestone:1.x label:web label:bug is:issue repo:OWNER/REPO", params["searchQuery"].(string))
+			assert.Equal(t, "is:issue repo:OWNER/REPO assignee:probablyCher state:open author:foo mentions:me milestone:1.x label:web label:bug ", params["searchQuery"].(string))
 		}))
 
 	http.Register(
@@ -157,7 +158,7 @@ func TestIssueList_atMe(t *testing.T) {
 			"hasIssuesEnabled": true,
 			"search": { "issueCount": 0, "edges": [] }
 		} } }`, func(_ string, params map[string]interface{}) {
-			assert.Equal(t, "assignee:monalisa state:open author:monalisa mentions:monalisa is:issue repo:OWNER/REPO", params["searchQuery"].(string))
+			assert.Equal(t, "is:issue repo:OWNER/REPO assignee:monalisa state:open author:monalisa mentions:monalisa ", params["searchQuery"].(string))
 		}))
 
 	_, err := runCommand(http, true, "-a @me -A @me --mention @me")
@@ -277,12 +278,13 @@ func TestIssueList_milestoneByNumber(t *testing.T) {
 		} } } }
 		`))
 	http.Register(
-		httpmock.GraphQL(`query IssueList\b`),
+		httpmock.GraphQL(`query IssueSearch\b`),
 		httpmock.GraphQLQuery(`
 		{ "data": {	"repository": {
 			"hasIssuesEnabled": true,
-			"issues": { "nodes": [] }
+			"search": { "issueCount": 0, "edges":[] }
 		} } }`, func(_ string, params map[string]interface{}) {
+			fmt.Println(params,"=======params==========")
 			assert.Equal(t, "12345", params["milestone"].(string)) // Database ID for the Milestone (see #1462)
 		}))
 

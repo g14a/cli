@@ -454,29 +454,6 @@ func IssueByNumber(client *Client, repo ghrepo.Interface, number int) (*Issue, e
 }
 
 func IssueSearch(client *Client, repo ghrepo.Interface, searchQuery string, limit int) (*IssuesAndTotalCount, error) {
-	type response struct {
-		Repository struct {
-			HasIssuesEnabled bool
-		}
-
-		Search struct {
-			IssueCount int
-			Edges      []struct {
-				Node struct {
-					Number    int
-					Title     string
-					State     string
-					UpdatedAt time.Time
-					Labels    Labels
-				}
-			}
-			PageInfo struct {
-				HasNextPage bool
-				EndCursor   string
-			}
-		}
-	}
-
 	query :=
 		`query IssueSearch($repoName: String!, $owner: String!, $type: SearchType!, $first: Int, $after: String, $searchQuery: String!) {
 			repository(name: $repoName, owner: $owner) {
@@ -509,8 +486,30 @@ func IssueSearch(client *Client, repo ghrepo.Interface, searchQuery string, limi
 		}
 	}`
 
-	searchQuery = searchQuery + "is:issue" +
-		" repo:" + repo.RepoOwner() + "/" + repo.RepoName()
+	type response struct {
+		Repository struct {
+			HasIssuesEnabled bool
+		}
+
+		Search struct {
+			IssueCount int
+			Edges      []struct {
+				Node struct {
+					Number    int
+					Title     string
+					State     string
+					UpdatedAt time.Time
+					Labels    Labels
+				}
+			}
+			PageInfo struct {
+				HasNextPage bool
+				EndCursor   string
+			}
+		}
+	}
+
+	searchQuery = fmt.Sprintf("is:issue repo:%s/%s %s", repo.RepoOwner(), repo.RepoName(), searchQuery)
 
 	pageLimit := min(limit, 100)
 
