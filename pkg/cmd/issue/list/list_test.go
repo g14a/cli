@@ -3,7 +3,6 @@ package list
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -123,15 +122,6 @@ func TestIssueList_tty_withFlags(t *testing.T) {
 			assert.Equal(t, "is:issue repo:OWNER/REPO assignee:probablyCher state:open author:foo mentions:me milestone:1.x label:web label:bug ", params["searchQuery"].(string))
 		}))
 
-	http.Register(
-		httpmock.GraphQL(`query RepositoryMilestoneList\b`),
-		httpmock.StringResponse(`
-		{ "data": { "repository": { "milestones": {
-			"nodes": [{ "title":"1.x", "id": "MDk6TWlsZXN0b25lMTIzNDU=" }],
-			"pageInfo": { "hasNextPage": false }
-		} } } }
-		`))
-
 	output, err := runCommand(http, true, "-a probablyCher -l web,bug -s open -A foo --mention me --milestone 1.x")
 	if err != nil {
 		t.Errorf("error running command `issue list`: %v", err)
@@ -248,35 +238,9 @@ func TestIssueList_web(t *testing.T) {
 	assert.Equal(t, "Opening github.com/OWNER/REPO/issues in your browser.\n", output.Stderr())
 }
 
-func TestIssueList_milestoneNotFound(t *testing.T) {
-	http := &httpmock.Registry{}
-	defer http.Verify(t)
-
-	http.Register(
-		httpmock.GraphQL(`query RepositoryMilestoneList\b`),
-		httpmock.StringResponse(`
-		{ "data": { "repository": { "milestones": {
-			"nodes": [{ "title":"1.x", "id": "MDk6TWlsZXN0b25lMTIzNDU=" }],
-			"pageInfo": { "hasNextPage": false }
-		} } } }
-		`))
-
-	_, err := runCommand(http, true, "--milestone NotFound")
-	if err == nil || err.Error() != `no milestone found with title "NotFound"` {
-		t.Errorf("error running command `issue list`: %v", err)
-	}
-}
-
 func TestIssueList_milestoneByNumber(t *testing.T) {
 	http := &httpmock.Registry{}
 	defer http.Verify(t)
-	http.Register(
-		httpmock.GraphQL(`query RepositoryMilestoneByNumber\b`),
-		httpmock.StringResponse(`
-		{ "data": { "repository": { "milestone": {
-			"id": "MDk6TWlsZXN0b25lMTIzNDU="
-		} } } }
-		`))
 	http.Register(
 		httpmock.GraphQL(`query IssueSearch\b`),
 		httpmock.GraphQLQuery(`
@@ -284,8 +248,7 @@ func TestIssueList_milestoneByNumber(t *testing.T) {
 			"hasIssuesEnabled": true,
 			"search": { "issueCount": 0, "edges":[] }
 		} } }`, func(_ string, params map[string]interface{}) {
-			fmt.Println(params, "=======params==========")
-			assert.Equal(t, "12345", params["milestone"].(string)) // Database ID for the Milestone (see #1462)
+			assert.Equal(t, "is:issue repo:OWNER/REPO state:open milestone:13 ", params["searchQuery"].(string)) // Database ID for the Milestone (see #1462)
 		}))
 
 	_, err := runCommand(http, true, "--milestone 13")
