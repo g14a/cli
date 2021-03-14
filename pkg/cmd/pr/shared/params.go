@@ -180,7 +180,7 @@ func ListURLWithQuery(listURL string, searchQuery string, options FilterOptions)
 	}
 
 	if searchQuery != "" {
-		query += fmt.Sprintf("%s", searchQuery)
+		query += searchQuery
 	}
 
 	q := u.Query()

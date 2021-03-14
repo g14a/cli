@@ -112,7 +112,7 @@ func listRun(opts *ListOptions) error {
 	searchQuery, webFilterOptions := prShared.IssueSearchBuild(filterAssignee, opts.State, filterAuthor, filterMention, opts.Milestone, opts.Labels, opts.WebMode)
 
 	if opts.Search != "" {
-		searchQuery += fmt.Sprintf("%s", opts.Search)
+		searchQuery += opts.Search
 	}
 
 	if opts.WebMode {
