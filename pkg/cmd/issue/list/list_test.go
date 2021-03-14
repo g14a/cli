@@ -284,7 +284,7 @@ func TestIssueList_milestoneByNumber(t *testing.T) {
 			"hasIssuesEnabled": true,
 			"search": { "issueCount": 0, "edges":[] }
 		} } }`, func(_ string, params map[string]interface{}) {
-			fmt.Println(params,"=======params==========")
+			fmt.Println(params, "=======params==========")
 			assert.Equal(t, "12345", params["milestone"].(string)) // Database ID for the Milestone (see #1462)
 		}))
 
