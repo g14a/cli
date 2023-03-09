@@ -14,7 +14,7 @@ require (
 	github.com/cli/shurcooL-graphql v0.0.1
 	github.com/cpuguy83/go-md2man/v2 v2.0.2
 	github.com/creack/pty v1.1.18
-	github.com/gabriel-vasile/mimetype v1.4.0
+	github.com/gabriel-vasile/mimetype v1.4.2
 	github.com/google/go-cmp v0.5.8
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/gorilla/websocket v1.4.2
@@ -38,8 +38,8 @@ require (
 	github.com/stretchr/testify v1.7.1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9
-	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
+	golang.org/x/sys v0.6.0
+	golang.org/x/term v0.6.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )
 
@@ -64,9 +64,9 @@ require (
 	github.com/stretchr/objx v0.1.0 // indirect
 	github.com/yuin/goldmark v1.4.4 // indirect
 	github.com/yuin/goldmark-emoji v1.0.1 // indirect
-	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
+	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220309155454-6242fa91716a // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/text v0.8.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 )
 
